@@ -4,7 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
-const expressHBS = require('express-handlebars');
+const exphbs = require('express-handlebars');
 const methodOverride = require('method-override');
 const passport = require('passport');
 const session = require('express-session');
@@ -33,14 +33,45 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Handlebars Helpers
+const {
+  formatDate,
+  editIcon,
+  stripTags,
+  truncate,
+  select,
+} = require('./helpers/hbs');
 
 // Handlebars
+app.engine(
+  '.hbs',
+  exphbs({
+    helpers: { formatDate, editIcon, stripTags, truncate, select },
+    defaultLayout: 'main',
+    extname: '.hbs',
+  })
+);
+app.set('view engine', '.hbs');
 
 // Sessions
-
+app.use(
+  session({
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongooseConnection: mongoose.connection,
+    }),
+  })
+);
 // Passport middleware
-
+app.use(passport.initialize());
+app.use(passport.session());
 // Set global var
+app.use((req, res, next) => {
+  res.locals.user = req.user || null;
+
+  return next();
+});
 
 // Static folder
 app.use(express.static(path.join(__dirname, 'public')));
